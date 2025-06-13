@@ -4,7 +4,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
-
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const {Authenticate} = require("./authServer")
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,11 +42,31 @@ let products = [
   }
 ];
 
+const userList = [
+  {name: "John", password: "Password"}
+]
+
+const generateToken = (req, res, next)=>{
+  // first User
+  const first = userList[0]
+  // createUserObject
+  const signObject = {userName: first.name}
+  userToken = jwt.sign(signObject, process.env.ACCESS_SECRET_TOKEN);
+  console.log(`userToken : ${userToken}`);
+  // localStorage.setItem("token", tokenData);
+  // localStorage.setItem("lastname", "Smith");
+  return res.json({success: true, msg:'Token generated', data: userToken})
+}
+
 // Root route
 app.get('/', (req, res) => {
+
   return res.send('<div><h1> Hello World </h1> <p> Welcome to the Product API! Go to /api/products to see all products.</p></div> ');
 });
 
+app.get("/login", generateToken, (req, res)=>{
+  
+})
 // TODO: Implement the following routes:
 // GET /api/products - Get all products
 // GET /api/products/:id - Get a specific product
@@ -53,11 +75,11 @@ app.get('/', (req, res) => {
 // DELETE /api/products/:id - Delete a product
 
 // Example route implementation for GET /api/products
-app.get('/api/products', (req, res) => {
+app.get('/api/products', Authenticate, (req, res) => {
   res.status(200).json({success: true, data: products});
 });
 
-app.get('/api/products/:id', (req,res)=>{
+app.get('/api/products/:id', Authenticate, (req,res)=>{
   // get route parameters from request
   console.log(req.params)
   const {id} = req.params; // the param must be exact to whats given in the id
@@ -88,7 +110,7 @@ app.post("/api/products", (req,res)=>{
 })
 
 
-app.put("/api/products/:id", (req, res)=>{
+app.put("/api/products/:id",Authenticate, (req, res)=>{
   // get product detail to change from body
   const {name, description, price, category, instock} =  req.body;
   
@@ -133,7 +155,7 @@ app.put("/api/products/:id", (req, res)=>{
   return res.json({success: true, msg:`Product with id : ${id} has been updated`, data: products})
 })
 
-app.delete("/api/products/:id", (req, res)=>{
+app.delete("/api/products/:id", Authenticate, (req, res)=>{
   // get parameter
   const {id} = req.params;
 
